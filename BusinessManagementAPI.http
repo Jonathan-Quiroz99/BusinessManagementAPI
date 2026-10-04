@@ -1,6 +1,39 @@
 @BusinessManagementAPI_HostAddress = http://localhost:5176
 
-GET {{BusinessManagementAPI_HostAddress}}/weatherforecast/
+### Get all products
+GET {{BusinessManagementAPI_HostAddress}}/api/products
 Accept: application/json
 
 ###
+
+### Get product by ID
+GET {{BusinessManagementAPI_HostAddress}}/api/products/2
+Accept: application/json
+
+###
+
+### Create a new product
+POST {{BusinessManagementAPI_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "name": "Red Velvet Cake",
+  "description": "Red velvet cake with cream cheese frosting",
+  "price": 500,
+  "isActive": true
+}
+
+### Update an existing product
+PUT {{BusinessManagementAPI_HostAddress}}/api/products/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "name": "Chocolate Cake",
+  "description": "Chocolate cake with vanilla filling",
+  "price": 600,
+  "isActive": true
+}
+
+### Delete a product
+DELETE {{BusinessManagementAPI_HostAddress}}/api/products/2
