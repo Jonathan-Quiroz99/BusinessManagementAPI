@@ -1,5 +1,30 @@
 @BusinessManagementAPI_HostAddress = http://localhost:5176
 
+
+### Get all orders
+GET {{BusinessManagementAPI_HostAddress}}/api/orders
+Accept: application/json
+
+###Get all items from order
+GET {{BusinessManagementAPI_HostAddress}}/api/orders/items
+
+###Post new order
+POST {{BusinessManagementAPI_HostAddress}}/api/orders
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": 3,
+      "quantity": 2
+    },
+    {
+      "productId": 4,
+      "quantity": 1
+    }
+  ]
+}
+
 ### Get all products
 GET {{BusinessManagementAPI_HostAddress}}/api/products
 Accept: application/json
@@ -23,8 +48,19 @@ Content-Type: application/json
   "isActive": true
 }
 
+### test for model validation
+POST {{BusinessManagementAPI_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "name": "test",
+  "description": "test",
+  "price": 100,
+  "isActive": true
+}
+
 ### Update an existing product
-PUT {{BusinessManagementAPI_HostAddress}}/api/products/1
+PUT {{BusinessManagementAPI_HostAddress}}/api/products/3
 Content-Type: application/json
 
 {
@@ -36,4 +72,4 @@ Content-Type: application/json
 }
 
 ### Delete a product
-DELETE {{BusinessManagementAPI_HostAddress}}/api/products/2
+DELETE {{BusinessManagementAPI_HostAddress}}/api/products/1

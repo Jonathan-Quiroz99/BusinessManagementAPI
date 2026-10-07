@@ -15,6 +15,10 @@ public class AppDbContext : DbContext
     // This property represents the Products table in the database
     public DbSet<Product> Products { get; set; }
 
+    public DbSet<Order> Orders { get; set; }
+
+    public DbSet<OrderItem> OrderItems { get; set; }
+
     // Override the OnModelCreating method to configure the model
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,5 +27,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Product>()
             .Property(p => p.Price)
             .HasPrecision(18, 2);
+
+        //Configure the relationship between OrderItem and Product
+        modelBuilder.Entity<OrderItem>()
+            .HasOne(oi => oi.Product)
+            .WithMany(p => p.OrderItems)
+            .HasForeignKey(oi => oi.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

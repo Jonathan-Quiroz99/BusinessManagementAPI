@@ -22,27 +22,27 @@ public class ProductsController : ControllerBase
         _context = context;
     }
 
-    // In-memory list of products for demonstration purposes
-    private static readonly List<Product> Products = new()
-    {
-        // Sample products for demonstration purposes
-        new Product
-        {
-            Id = 1,
-            Name = "Chocolate Cake",
-            Description = "Chocolate cake with vanilla filling",
-            Price = 450,
-            IsActive = true
-        },
-        new Product
-        {
-            Id = 2,
-            Name = "Cheesecake",
-            Description = "Classic cheesecake with strawberry topping",
-            Price = 380,
-            IsActive = true
-        }
-    };
+    //// In-memory list of products for demonstration purposes
+    //private static readonly List<Product> Products = new()
+    //{
+    //    // Sample products for demonstration purposes
+    //    new Product
+    //    {
+    //        Id = 1,
+    //        Name = "Chocolate Cake",
+    //        Description = "Chocolate cake with vanilla filling",
+    //        Price = 450,
+    //        IsActive = true
+    //    },
+    //    new Product
+    //    {
+    //        Id = 2,
+    //        Name = "Cheesecake",
+    //        Description = "Classic cheesecake with strawberry topping",
+    //        Price = 380,
+    //        IsActive = true
+    //    }
+    //};
 
     // GET api/products
     [HttpGet]
