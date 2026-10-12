@@ -89,6 +89,7 @@ public class ProductsController : ControllerBase
     }
 
     // PUT api/products/{id}
+    //Updates product with given id
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, Product updatedProduct)
     {

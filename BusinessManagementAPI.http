@@ -1,12 +1,16 @@
 @BusinessManagementAPI_HostAddress = http://localhost:5176
 
+###*************************
+###ORDERS
+###*************************
 
 ### Get all orders
 GET {{BusinessManagementAPI_HostAddress}}/api/orders
 Accept: application/json
 
-###Get all items from order
-GET {{BusinessManagementAPI_HostAddress}}/api/orders/items
+###Get order by id
+GET {{BusinessManagementAPI_HostAddress}}/api/orders/3
+Accept: application/json
 
 ###Post new order
 POST {{BusinessManagementAPI_HostAddress}}/api/orders
@@ -16,35 +20,53 @@ Content-Type: application/json
   "items": [
     {
       "productId": 3,
-      "quantity": 2
+      "quantity": 1
     },
     {
       "productId": 4,
-      "quantity": 1
+      "quantity": 2
     }
   ]
 }
+
+###Puts diferent order info in a existing order
+PUT {{BusinessManagementAPI_HostAddress}}/api/orders/3
+Content-Type: application/json
+
+{
+  "isActive": true,
+  "items": [
+    {
+      "productId": 4,
+      "quantity": -1
+    }
+  ]
+}
+
+###Delete order using id
+DELETE {{BusinessManagementAPI_HostAddress}}/api/orders/3
+
+
+###*************************
+###PRODUCTS
+###*************************
 
 ### Get all products
 GET {{BusinessManagementAPI_HostAddress}}/api/products
 Accept: application/json
 
-###
-
 ### Get product by ID
 GET {{BusinessManagementAPI_HostAddress}}/api/products/2
 Accept: application/json
-
-###
 
 ### Create a new product
 POST {{BusinessManagementAPI_HostAddress}}/api/products
 Content-Type: application/json
 
 {
-  "name": "Red Velvet Cake",
-  "description": "Red velvet cake with cream cheese frosting",
-  "price": 500,
+  "name": "pumpkin spice Cake",
+  "description": "pubpkin spice cake with frosting on top",
+  "price": 750,
   "isActive": true
 }
 
