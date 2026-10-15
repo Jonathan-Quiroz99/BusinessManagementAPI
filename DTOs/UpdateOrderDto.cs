@@ -4,7 +4,6 @@ namespace BusinessManagementAPI.DTOs;
 
 public class UpdateOrderDto
 {
-    [Required]
     public bool IsActive { get; set; }
 
     [Required]

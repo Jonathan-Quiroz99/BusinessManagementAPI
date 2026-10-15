@@ -2,6 +2,7 @@
 using BusinessManagementAPI.DTOs;
 using BusinessManagementAPI.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace BusinessManagementAPI.Controllers;
@@ -31,8 +32,10 @@ public class OrdersController : ControllerBase
                 Items = order.Items.Select(item => new OrderItemResponseDto
                 {
                     ProductId = item.ProductId,
-                    Quantity = item.Quantity
-                }).ToList()
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice
+                }).ToList(),
+                Total = order.Items.Sum(i => i.UnitPrice * i.Quantity)
             })
             .ToListAsync();
 
@@ -53,8 +56,10 @@ public class OrdersController : ControllerBase
                 Items = order.Items.Select(item => new OrderItemResponseDto
                 {
                     ProductId = item.ProductId,
-                    Quantity = item.Quantity
-                }).ToList()
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice
+                }).ToList(),
+                Total = order.Items.Sum(i => i.UnitPrice * i.Quantity)
             })
             .FirstOrDefaultAsync();
 
@@ -78,7 +83,12 @@ public class OrdersController : ControllerBase
         //validate any duplicated products
         if (productIds.Count != productIds.Distinct().Count())
         {
-            return BadRequest("An order cannot contain duplicate products.");
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid Order",
+                Detail = "An order cannot contain duplicate products."
+            });
         }
 
         //gets existing products from database fro future validations
@@ -87,7 +97,8 @@ public class OrdersController : ControllerBase
             .Select(p => new
             {
                 p.Id,
-                p.IsActive
+                p.IsActive,
+                p.Price
             }).ToListAsync();
 
         //validates if incoming products exist in database
@@ -96,7 +107,12 @@ public class OrdersController : ControllerBase
             var missing = productIds
                 .Where(id => !existingProducts.Any(p => p.Id == id)).ToList();
 
-            return BadRequest($"Product {((missing.Count > 1) ? "IDs" : "ID")} {string.Join(", ", missing)} {((missing.Count > 1) ? "are" : "is")} invalid or missing.");
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Products not found in Database",
+                Detail = $"Product {((missing.Count > 1) ? "IDs" : "ID")} {string.Join(", ", missing)} {((missing.Count > 1) ? "are" : "is")} invalid or missing."
+            });
         }
 
         //validates if incoming products are active
@@ -104,8 +120,12 @@ public class OrdersController : ControllerBase
         {
             var inactive = existingProducts.Where(p => !p.IsActive).Select(p => p.Id).ToList();
 
-            return BadRequest($"Product {((inactive.Count > 1) ? "IDs" : "ID")} {string.Join(", ", inactive)} {((inactive.Count > 1) ? "are" : "is")} unavailable.");
-        }        
+            return BadRequest(new ProblemDetails 
+            { Status = StatusCodes.Status400BadRequest, 
+              Title = "Inactive Products",
+              Detail = $"Product {((inactive.Count > 1) ? "IDs" : "ID")} {string.Join(", ", inactive)} {((inactive.Count > 1) ? "are" : "is")} unavailable." 
+            });
+        }
 
         //creates order using dto for order items
         var order = new Order
@@ -113,7 +133,8 @@ public class OrdersController : ControllerBase
             Items = orderDto.Items.Select(item => new OrderItem
             {
                 ProductId = item.ProductId,
-                Quantity = item.Quantity
+                Quantity = item.Quantity,
+                UnitPrice = existingProducts.First(p => p.Id == item.ProductId).Price
             }).ToList()
         };
 
@@ -132,8 +153,10 @@ public class OrdersController : ControllerBase
             Items = order.Items.Select(item => new OrderItemResponseDto
             {
                 ProductId = item.ProductId,
-                Quantity = item.Quantity
-            }).ToList()
+                Quantity = item.Quantity,
+                UnitPrice = existingProducts.First(p => p.Id == item.ProductId).Price
+            }).ToList(),
+            Total = order.Items.Sum(i => i.UnitPrice * i.Quantity)
         };
 
         return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, response);
@@ -151,7 +174,12 @@ public class OrdersController : ControllerBase
         //validates if there are any duplicated products
         if (productsIds.Count != productsIds.Distinct().Count())
         {
-            return BadRequest("An order cannot contain duplicate products.");
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid Order",
+                Detail = "An order cannot contain duplicate products."
+            });
         }
 
         //calls order from database to initiate update
@@ -165,16 +193,22 @@ public class OrdersController : ControllerBase
 
         if(!order.IsActive)
         {
-            return BadRequest("cannot modify inactive orders");
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Inactive Order",
+                Detail = "cannot modify inactive orders" }
+            );
         }
 
-        //gets existing orders from database to compare incoming products existence and availability
+        //gets existing products from database to compare incoming products existence and availability
         var existingProducts = await _context.Products
             .Where(p => productsIds.Contains(p.Id))
             .Select(p => new
             {
                 p.Id,
-                p.IsActive
+                p.IsActive,
+                p.Price
             }).ToListAsync();
 
         //validates if products exist in database 
@@ -183,16 +217,36 @@ public class OrdersController : ControllerBase
             var missingProductIds = productsIds
                 .Where(id => !existingProducts.Any(p => p.Id == id)).ToList();
 
-            return BadRequest($"Product {((missingProductIds.Count > 1) ? "IDs" : "ID")} {string.Join(", ", missingProductIds)} {((missingProductIds.Count > 1) ? "are" : "is")} invalid or missing.");
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Products not found in Database",
+                Detail = $"Product {((missingProductIds.Count > 1) ? "IDs" : "ID")} {string.Join(", ", missingProductIds)} {((missingProductIds.Count > 1) ? "are" : "is")} invalid or missing."
+            });
         }
 
-        //validates if products are active
-        if(existingProducts.Any(p => !p.IsActive))
+        var inactiveids = existingProducts.Where(p => !p.IsActive).Select(p => p.Id).ToList();
+
+        var existingOrderProductIds = order.Items
+            .Select(i => i.ProductId)
+            .ToList();
+
+        var incomingNewInactive = inactiveids.Where(id => !existingOrderProductIds.Contains(id)).ToList();
+
+        //validates if any inactive products are new to the existing order, there are any new incoming products
+        //reject order
+        if (incomingNewInactive.Any())
         {
-            var inactive = existingProducts.Where(p => !p.IsActive).Select(p => p.Id).ToList();
-
-            return BadRequest($"Products {((inactive.Count > 1) ? "IDs" : "ID")} {string.Join(", ", inactive)} {((inactive.Count > 1)? "are" : "is")} unavailable");
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Inactive Products",
+                Detail = $"Products {((incomingNewInactive.Count > 1) ? "IDs" : "ID")} {string.Join(", ", incomingNewInactive)} {((incomingNewInactive.Count > 1) ? "are" : "is")} unavailable"
+            });
         }
+
+        // Keep the original order items before replacing them
+        var originalItems = order.Items.ToList();
 
         //remove existing order items
         _context.OrderItems.RemoveRange(order.Items);
@@ -206,10 +260,29 @@ public class OrdersController : ControllerBase
         // Add the new order items
         foreach (var item in UpdatedOrder.Items)
         {
+            decimal unitPrice;
+
+            // captures original items that are already in existing item
+            var originalItem = originalItems.FirstOrDefault(i => i.ProductId == item.ProductId);
+
+            //if item exist in order, use unitprice from existing order
+            if (originalItem != null)
+            {
+                unitPrice = originalItem.UnitPrice;
+            }
+            else
+            {
+                // if there is a new item use unitprice from database
+                unitPrice = existingProducts
+                    .First(p => p.Id == item.ProductId)
+                    .Price;
+            }
+
             order.Items.Add(new OrderItem
             {
                 ProductId = item.ProductId,
-                Quantity = item.Quantity
+                Quantity = item.Quantity,
+                UnitPrice = unitPrice
             });
         }
 
@@ -225,8 +298,10 @@ public class OrdersController : ControllerBase
             Items = order.Items.Select(item => new OrderItemResponseDto
             {
                 ProductId = item.ProductId,
-                Quantity = item.Quantity
-            }).ToList()
+                Quantity = item.Quantity,
+                UnitPrice = item.UnitPrice
+            }).ToList(),
+            Total = order.Items.Sum(i => i.UnitPrice * i.Quantity)
         };
 
         return Ok(response);
@@ -237,7 +312,7 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> DeleteOrder(int id)
     {
         //find order with id
-        var order = await _context.Orders.FindAsync(id);
+        var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
         if(order == null)
         {
             return NotFound();
@@ -245,14 +320,14 @@ public class OrdersController : ControllerBase
 
         if(!order.IsActive)
         {
-            return BadRequest("Unable to delete inactive orders");
+            return BadRequest("Order already inactive");
         }
 
-        return BadRequest("Unable to delete orders");
+        ////set order as inactive
+        order.IsActive = false;
 
-        ////delete order
-        //_context.Orders.Remove(order);
-        //await _context.SaveChangesAsync();
-        //return NoContent();
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 }

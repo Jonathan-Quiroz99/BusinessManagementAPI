@@ -28,6 +28,12 @@ public class AppDbContext : DbContext
             .Property(p => p.Price)
             .HasPrecision(18, 2);
 
+        // Configure the precision of the Price property in the OrderItem entity
+        // This ensures that the UnitPrice column in the database has a precision of 18 and a scale of 2
+        modelBuilder.Entity<OrderItem>()
+            .Property(p => p.UnitPrice)
+            .HasPrecision(18, 2);
+
         //Configure the relationship between OrderItem and Product
         modelBuilder.Entity<OrderItem>()
             .HasOne(oi => oi.Product)
